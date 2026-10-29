@@ -5,13 +5,14 @@
 #     CNB_TOKEN, no long-lived token is ever stored anywhere).
 #  2. `$: vscode` — the cloud workspace that runs the actual proxy.
 #
-# Required pipeline env. Fastest path: fork this repo **private** and inline
-# PROXY_KEY below (safe inside your own private repo). Cleaner path: keep the
-# secrets in a private CNB secrets repo and pull them via `imports:`.
-#   PROXY_KEY    API key your clients send (Bearer).  <-- the one value you must set
+# Required pipeline env comes from the secrets repo (kyan1823/cnb2api-secret,
+# a CNB 「密码仓」, pulled in via `imports:` below):
+#   PROXY_KEY    API key your clients send (Bearer).
 #   REG_TOKEN    shared secret between start.sh and the relay's /ops/register.
 #   REGISTER_URL full URL of the relay registration endpoint, e.g.
 #                https://ai.example.com/ops/register  (optional; empty = skip)
+# Do NOT add an inline `env: PROXY_KEY` here — env overrides imports and would
+# silently shadow the value from the secrets repo.
 
 # ---------------------------------------------------------------------------
 # Keepalive: ensure the vscode workspace is alive and reachable via the fixed
@@ -32,8 +33,8 @@ main:
     - name: keepalive
       docker:
         image: cnbcool/default-dev-env:latest
-      # imports:
-      #   - https://cnb.cool/YOUR_ORG/your-secrets-repo/-/blob/main/proxy.yml
+      imports:
+        - https://cnb.cool/kyan1823/cnb2api-secret/-/blob/main/proxy.yml
       env:
         REPO: $CNB_REPO_SLUG
         #FIXED: https://ai.example.com/health
@@ -84,15 +85,10 @@ $:
   vscode:
     - docker:
         image: cnbcool/default-dev-env:latest
-      # Fastest path (private fork): inline your key here — safe in your own
-      # private repo. Generate one with `openssl rand -hex 24`; do NOT ship the
-      # placeholder. Cleaner path: DELETE this whole env: block (both lines) and
-      # uncomment imports: below — env overrides imports, so a leftover inline
-      # PROXY_KEY would silently shadow the one from your secrets repo.
-      env:
-        PROXY_KEY: "sk-set-your-own-long-random-key"
-      # imports:
-      #   - https://cnb.cool/YOUR_ORG/your-secrets-repo/-/blob/main/proxy.yml
+      # Secrets come from kyan1823/cnb2api-secret via imports:. Do not add an
+      # inline env: here — env overrides imports and would shadow the secrets repo.
+      imports:
+        - https://cnb.cool/kyan1823/cnb2api-secret/-/blob/main/proxy.yml
       runner:
         cpus: 2
       services:
